@@ -1,9 +1,9 @@
 -- Paste a query into an AI search in the browser, with the current provider.
---   search(q)          open the current provider with `q`
+--   search(q, name)    open the current provider (or `name`) with `q`
 --   selection()        search the visual selection
 --   set_provider(name, save)   switch for the session; save: also call opts.save(name)
 --   pick()             telescope picker of the providers: <CR> switch, <M-s> switch and save
---   command(cmd)       :PasteSearch [-provider name] [-save] [query]; range: the selection
+--   command(cmd, fixed) :PasteSearch [-provider name] [-save] [query]; range: the selection
 -- A provider either takes the query in its URL (`url`, query appended) or not (`paste`:
 -- the query goes to the clipboard and the site opens, to paste by hand).
 
@@ -93,14 +93,15 @@ function M.set_provider(name, save)
 	return true
 end
 
----Search `q` with the current provider; blank queries do nothing.
+---Search `q` with the current provider, or `name` without switching; blank queries do nothing.
 ---@param q string?
-function M.search(q)
+---@param name? string provider for this search only
+function M.search(q, name)
 	q = vim.trim(q or '')
 	if q == '' then
 		return
 	end
-	local name = state.provider
+	name = name or state.provider
 	local p = M.providers[name]
 	if p.url then
 		vim.ui.open(p.url .. vim.uri_encode(q, 'rfc2396'))
@@ -127,8 +128,22 @@ end
 
 ---:PasteSearch [-provider name] [-save] [query]
 ---No query: the current line, or the selection with a range. -save alone only saves.
+---With `fixed` (:Google, :Perplexity): no flags, search that provider, the current one stays.
 ---@param cmd vim.api.keyset.create_user_command.command_args
-function M.command(cmd)
+---@param fixed? string provider name
+function M.command(cmd, fixed)
+	if fixed then
+		local q = cmd.args
+		if q == '' then
+			if cmd.range > 0 then
+				q = last_selection()
+			else
+				q = vim.api.nvim_get_current_line()
+			end
+		end
+		M.search(q, fixed)
+		return
+	end
 	local words = {}
 	local provider = nil
 	local save = false
