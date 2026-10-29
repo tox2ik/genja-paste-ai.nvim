@@ -14,6 +14,7 @@ local M = {}
 ---@class genja-paste-ai.Provider
 ---@field url? string the query is appended, URI-encoded
 ---@field paste? string opened as is; the query goes to the clipboard
+---@field ai? boolean an AI chat, not a plain web search (marked in the picker)
 
 ---@class genja-paste-ai.Opts
 ---@field provider? string current provider at start (default perplexity)
@@ -22,11 +23,23 @@ local M = {}
 
 ---@type table<string, genja-paste-ai.Provider>
 M.providers = {
-	perplexity = { url = 'https://www.perplexity.ai/search?q=' },
-	chatgpt = { url = 'https://chatgpt.com/?q=' },
-	grok = { url = 'https://grok.com/?q=' },
-	gemini = { paste = 'https://gemini.google.com/app' },
-	manus = { paste = 'https://manus.im/app' },
+	perplexity = { ai = true, url = 'https://www.perplexity.ai/search?q=' },
+	chatgpt = { ai = true, url = 'https://chatgpt.com/?q=' },
+	grok = { ai = true, url = 'https://grok.com/?q=' },
+	claude = { ai = true, url = 'https://claude.ai/new?q=' },
+	copilot = { ai = true, url = 'https://copilot.microsoft.com/?q=' },
+	['google-ai'] = { ai = true, url = 'https://www.google.com/search?udm=50&q=' },
+	gemini = { ai = true, paste = 'https://gemini.google.com/app' },
+	manus = { ai = true, paste = 'https://manus.im/app' },
+	google = { url = 'https://www.google.com/search?q=' },
+	bing = { url = 'https://www.bing.com/search?q=' },
+	duckduckgo = { url = 'https://duckduckgo.com/?q=' },
+	yandex = { url = 'https://yandex.com/search/?text=' },
+	yahoo = { url = 'https://search.yahoo.com/search?p=' },
+	kagi = { url = 'https://kagi.com/search?q=' },
+	brave = { url = 'https://search.brave.com/search?q=' },
+	startpage = { url = 'https://www.startpage.com/do/search?q=' },
+	stackoverflow = { url = 'https://stackoverflow.com/search?q=' },
 }
 
 local state = {
@@ -177,17 +190,24 @@ function M.pick()
 			vim.notify(SRC .. 'provider ' .. entry.value .. ' (' .. how .. ')')
 		end
 	end
+	-- Entries sorted by their display text, so the (ai) ones group together.
+	local entries = {}
+	for _, name in ipairs(M.names()) do
+		local display = name
+		if M.providers[name].ai then
+			display = '(ai) ' .. display
+		end
+		if name == state.provider then
+			display = display .. ' (current)'
+		end
+		table.insert(entries, { value = name, display = display, ordinal = display })
+	end
+	table.sort(entries, function(a, b) return a.display < b.display end)
 	require('telescope.pickers').new({}, {
 		prompt_title = 'Paste search provider (<CR> session, <M-s> save)',
 		finder = require('telescope.finders').new_table({
-			results = M.names(),
-			entry_maker = function(name)
-				local display = name
-				if name == state.provider then
-					display = name .. ' (current)'
-				end
-				return { value = name, display = display, ordinal = name }
-			end,
+			results = entries,
+			entry_maker = function(entry) return entry end,
 		}),
 		sorter = require('telescope.config').values.generic_sorter({}),
 		attach_mappings = function(bufnr, map)
