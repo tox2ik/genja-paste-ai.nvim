@@ -2,7 +2,8 @@
 --   search(q, name)    open the current provider (or `name`) with `q`
 --   selection()        search the visual selection
 --   set_provider(name, save)   switch for the session; save: also call opts.save(name)
---   pick()             telescope picker of the providers: <CR> switch, <M-s> switch and save
+--   pick(q)            telescope picker of the providers: <CR> switch, <M-s> switch and save; q: then search it
+--   selection_pick()   pick a provider, then search the visual selection with it
 --   command(cmd, fixed) :PasteSearch [-provider name] [-save] [query]; range: the selection
 -- A provider either takes the query in its URL (`url`, query appended) or not (`paste`:
 -- the query goes to the clipboard and the site opens, to paste by hand).
@@ -119,6 +120,13 @@ function M.selection()
 	M.search(table.concat(lines, '\n'))
 end
 
+---Pick a provider, then search the visual selection with it (leaves visual mode first).
+function M.selection_pick()
+	local lines = vim.fn.getregion(vim.fn.getpos('v'), vim.fn.getpos('.'), { type = vim.fn.mode() })
+	vim.api.nvim_feedkeys(vim.keycode('<Esc>'), 'n', false)
+	M.pick(table.concat(lines, '\n'))
+end
+
 ---Lines of the last visual selection (for a command with a range).
 ---@return string
 local function last_selection()
@@ -194,7 +202,8 @@ function M.complete(arglead, cmdline)
 end
 
 ---Telescope picker of the providers: <CR> switches for the session, <M-s> also saves.
-function M.pick()
+---@param q? string searched with the chosen provider after switching
+function M.pick(q)
 	local actions = require('telescope.actions')
 	local action_state = require('telescope.actions.state')
 	local function choose(bufnr, save)
@@ -203,6 +212,9 @@ function M.pick()
 		if entry and M.set_provider(entry.value, save) then
 			local how = (save and 'saved' or 'this session')
 			vim.notify(SRC .. 'provider ' .. entry.value .. ' (' .. how .. ')')
+			if q then
+				M.search(q)
+			end
 		end
 	end
 	-- Entries sorted by their display text, so the (ai) ones group together.

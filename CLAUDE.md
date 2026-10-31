@@ -11,7 +11,7 @@ code or history: confirm or delete. `Hint:` is a working note for Claude.
 
 ## Layout
 
-- `lua/genja-paste-ai/init.lua`: `setup()`, `search()`, `selection()`, `set_provider()`, `current()`, `names()`, `pick()`, `command()`, `complete()`.
+- `lua/genja-paste-ai/init.lua`: `setup()`, `search()`, `selection()`, `set_provider()`, `current()`, `names()`, `pick(q)`, `selection_pick()`, `command()`, `complete()`.
 - `plugin/genja-paste-ai.lua`: `:PasteSearch`, alias `:Wot`; fixed-provider `:Google`, `:Perplexity`, `:Xty`.
 - Moved out of the config's `lua/genja/ext/perplexity.lua` and `plugin/perplexity-search.lua`.
 
@@ -25,3 +25,4 @@ code or history: confirm or delete. `Hint:` is a working note for Claude.
 - `-save` calls `setup({ save = fn })`; the plugin writes no file. The config's spec keeps the name in the gitignored `lua/genja/local/paste-ai.lua` (`return '<name>'`) and passes it back as `provider`.
 - `<F2>` (config): one entry in group `lookup`, `paste search provider (<current>)`, opens `pick()`: `<CR>` switches for the session, `<M-s>` also saves.
 - The picker marks AI providers (`ai = true`) with a leading `(ai)` and sorts entries lexically by that display text.
+- Right-click in visual mode (config's `lua/genja/ext/popup-menu.lua`): `Lookup: paste search selection` (current provider) and `Lookup: paste search with provider` (`selection_pick()`: the picker, then the chosen provider searches the selection; the switch stays for the session, `<M-s>` also saves).
